@@ -1,0 +1,49 @@
+import pandas as pd
+from bs4 import BeautifulSoup
+import requests
+
+planilha = pd.read_excel("cnpjs.xlsx")
+
+cnpjs = planilha['cnpj']
+
+lista = []
+
+for i in range(cnpjs.size):
+    try:
+        url = f"https://cnpja.com/office/{cnpjs[i]}"
+
+        resp = requests.get(url)
+
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.content, 'html.parser')
+
+            spans = soup.find_all("span", attrs={"class":"hover:bg-primary-200-700-token active:bg-primary-300-600-token"})
+
+            if spans:
+                lista.append({
+                    "cnpj": cnpjs[i],
+                    "razao_social": spans[0].text,
+                    "nome_fantasia1": spans[10].text,
+                    "nome_fantasia2": spans[11].text,
+                    "nome_fantasia3": spans[12].text
+                })
+                print(f"deu certo {cnpjs[i]}")
+            else:
+                lista.append({
+                    "cnpj": cnpjs[i],
+                    "razao_social": "-",
+                    "nome_fantasia1": "-",
+                    "nome_fantasia2": "-",
+                    "nome_fantasia3": "-"
+                })
+                print(f"nao deu certo mas {cnpjs[i]}")
+
+            print(f"passagem: {i}")
+    except:
+        print("erro 500")
+        planilha_final = pd.DataFrame(lista)
+        planilha_final.to_excel("razao_social_e_nome_fantasia.xlsx", index=False)
+
+planilha_final = pd.DataFrame(lista)
+
+planilha_final.to_excel("razao_social_e_nome_fantasia.xlsx", index=False)
